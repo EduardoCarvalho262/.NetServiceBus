@@ -1,5 +1,8 @@
 ﻿using ApiServiceBus.Domain;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Azure.ServiceBus;
+using System.Text;
+using System.Text.Json;
 
 namespace ApiServiceBus.Controllers
 {
@@ -7,18 +10,35 @@ namespace ApiServiceBus.Controllers
     [Route("[controller]")]
     public class ServiceBusPOCController : ControllerBase
     {
-        private readonly ILogger<ServiceBusPOCController> _logger;
 
-        public ServiceBusPOCController(ILogger<ServiceBusPOCController> logger)
+        private readonly IConfiguration _config;
+        private readonly string serviceBusConnectionString;
+
+        public ServiceBusPOCController(IConfiguration config)
         {
-            _logger = logger;
+            _config = config;
+            serviceBusConnectionString = _config.GetValue<string>("AzureBusConnectionString");
         }
 
         [HttpPost]
-        public string EnviarMensagem(Pessoa pessoa)
+        [Route("topic")]
+        public async Task<IActionResult> EnviarMensagem(Pessoa pessoa)
         {
-            return "";
-        }   
+            await EnviarMensagemParaTopico(pessoa);
+            return Ok(pessoa);
+        }
 
+        private async Task EnviarMensagemParaTopico(Pessoa pessoa)
+        {
+            var topico = "pessoa";
+
+            var client = new TopicClient(serviceBusConnectionString, topico);
+            string corpoDaMensagem = JsonSerializer.Serialize(pessoa);
+            var mensagem = new Message(Encoding.UTF8.GetBytes(corpoDaMensagem));
+
+
+            await client.SendAsync(mensagem);
+            await client.CloseAsync();
+        }
     }
 }
