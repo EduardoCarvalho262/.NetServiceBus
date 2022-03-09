@@ -35,7 +35,7 @@ namespace ApiServiceBus.Controllers
             var client = new TopicClient(serviceBusConnectionString, topico);
             string corpoDaMensagem = JsonSerializer.Serialize(pessoa);
             var mensagem = new Message(Encoding.UTF8.GetBytes(corpoDaMensagem));
-
+            mensagem.UserProperties.Add("sexo", pessoa.Sexo);
 
             await client.SendAsync(mensagem);
             await client.CloseAsync();
